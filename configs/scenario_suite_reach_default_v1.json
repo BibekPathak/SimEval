@@ -1,0 +1,686 @@
+{
+  "generator": {
+    "base_seed": 1000,
+    "dev_frac": 0.5,
+    "difficulty_counts": {},
+    "n_scenarios": 30,
+    "qpos_noise": 0.0,
+    "val_frac": 0.25
+  },
+  "scenarios": [
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 0,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0000",
+      "seed": 1000,
+      "split": "dev",
+      "target_position": [
+        0.22094626312161436,
+        0.018397114664112018,
+        0.3977955548753467
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        0.35789006454112493,
+        -0.42380136573218574,
+        -0.9565112177746429,
+        0.41632319799381357
+      ],
+      "metadata": {
+        "index": 1,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0001",
+      "seed": 1001,
+      "split": "validation",
+      "target_position": [
+        0.19385936417006633,
+        -0.23059884856614415,
+        0.2788296222904105
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        -0.19891454561115918,
+        -0.2931638637608339,
+        0.17566249449479687,
+        -1.0009011146733413
+      ],
+      "metadata": {
+        "index": 2,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0002",
+      "seed": 1002,
+      "split": "dev",
+      "target_position": [
+        0.3228180385669566,
+        -0.13643575695756183,
+        0.5139971731686402
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 3,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0003",
+      "seed": 1003,
+      "split": "held_out",
+      "target_position": [
+        0.19133826157941652,
+        -0.03771869522761985,
+        0.40776531741931754
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        -0.11934536305276255,
+        0.12067380485798762,
+        1.0786968573311522,
+        -1.1984245118093662
+      ],
+      "metadata": {
+        "index": 4,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0004",
+      "seed": 1004,
+      "split": "validation",
+      "target_position": [
+        0.18882146421060889,
+        -0.14828595394334,
+        0.25816049342540837
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        0.24940448751689737,
+        0.6026269041793554,
+        1.525510411049729,
+        -1.0808489469114946
+      ],
+      "metadata": {
+        "index": 5,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0005",
+      "seed": 1005,
+      "split": "dev",
+      "target_position": [
+        0.11663952709185155,
+        0.30503787688146733,
+        0.32065929191446363
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 6,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0006",
+      "seed": 1006,
+      "split": "validation",
+      "target_position": [
+        0.20628042929837925,
+        0.016680063271421425,
+        0.3250891457518537
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        -0.30340475517235155,
+        0.08881879351666999,
+        1.265078885178645,
+        -0.15622124905968593
+      ],
+      "metadata": {
+        "index": 7,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0007",
+      "seed": 1007,
+      "split": "dev",
+      "target_position": [
+        0.20821725385923487,
+        0.13309809206222503,
+        0.4700299754258361
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        0.8707850181879492,
+        0.8697388934577731,
+        1.101682202671737,
+        -0.3236044672490046
+      ],
+      "metadata": {
+        "index": 8,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0008",
+      "seed": 1008,
+      "split": "held_out",
+      "target_position": [
+        0.2133008227979863,
+        0.25621305593299304,
+        0.29132178826998156
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 9,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0009",
+      "seed": 1009,
+      "split": "validation",
+      "target_position": [
+        0.182753936467251,
+        -0.02546846573748496,
+        0.22093761407074328
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        0.48146584888880306,
+        0.34881953914569463,
+        0.787663539079666,
+        -0.289850725320671
+      ],
+      "metadata": {
+        "index": 10,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0010",
+      "seed": 1010,
+      "split": "dev",
+      "target_position": [
+        0.24898121730065328,
+        0.016069173963301524,
+        0.5854242279076536
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        -0.7523298345209989,
+        -0.7149450055100255,
+        -0.32747665535717907,
+        -0.2589238244738037
+      ],
+      "metadata": {
+        "index": 11,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0011",
+      "seed": 1011,
+      "split": "held_out",
+      "target_position": [
+        0.33735681914946924,
+        0.060450150691965,
+        0.2892920565546757
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 12,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0012",
+      "seed": 1012,
+      "split": "dev",
+      "target_position": [
+        0.19937288995771946,
+        0.04553028656089147,
+        0.30014329621254376
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        -0.052431492616693776,
+        0.21211349373759203,
+        -0.8335341873215442,
+        0.07657320804761159
+      ],
+      "metadata": {
+        "index": 13,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0013",
+      "seed": 1013,
+      "split": "dev",
+      "target_position": [
+        0.23202384203756402,
+        -0.2195741027205663,
+        0.48251702834464305
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        0.886645152750943,
+        0.0205087032894945,
+        -0.8545170934077085,
+        1.098647879925839
+      ],
+      "metadata": {
+        "index": 14,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0014",
+      "seed": 1014,
+      "split": "validation",
+      "target_position": [
+        0.34467426132627776,
+        0.08433529427591521,
+        0.5771452189337167
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 15,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0015",
+      "seed": 1015,
+      "split": "dev",
+      "target_position": [
+        0.2080267849151902,
+        0.01786208494120024,
+        0.4693481503234673
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        0.07970766962118947,
+        -0.08503863302780801,
+        -0.051046935986508446,
+        1.3995384027143625
+      ],
+      "metadata": {
+        "index": 16,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0016",
+      "seed": 1016,
+      "split": "held_out",
+      "target_position": [
+        0.26140229542715543,
+        -0.027059901502273772,
+        0.34852206063158564
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        0.17931911892903585,
+        -0.7764909831430212,
+        -0.2664713578633233,
+        0.3594770040448665
+      ],
+      "metadata": {
+        "index": 17,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0017",
+      "seed": 1017,
+      "split": "validation",
+      "target_position": [
+        0.24466715943822184,
+        0.30814794913944243,
+        0.6084833446723825
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 18,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0018",
+      "seed": 1018,
+      "split": "dev",
+      "target_position": [
+        0.2273703519485027,
+        -0.008196324211331806,
+        0.5660358328562711
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        0.3287519478664287,
+        -0.2877349955046786,
+        0.6555683919267876,
+        -0.7399658972898049
+      ],
+      "metadata": {
+        "index": 19,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0019",
+      "seed": 1019,
+      "split": "held_out",
+      "target_position": [
+        0.2571202684949301,
+        -0.048705537283359225,
+        0.3960913489853699
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        0.37254065131027037,
+        -0.7402137800546502,
+        -0.21082202464019484,
+        -0.03369882961897264
+      ],
+      "metadata": {
+        "index": 20,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0020",
+      "seed": 1020,
+      "split": "dev",
+      "target_position": [
+        0.3011314146211531,
+        -0.20854890310334762,
+        0.23179096688823328
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 21,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0021",
+      "seed": 1021,
+      "split": "dev",
+      "target_position": [
+        0.1982579172550904,
+        -0.06908865486183298,
+        0.6164146177695303
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        0.14606698627667247,
+        0.01410799232054516,
+        0.7762944461473262,
+        0.9229075892418312
+      ],
+      "metadata": {
+        "index": 22,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0022",
+      "seed": 1022,
+      "split": "validation",
+      "target_position": [
+        0.17512753363027725,
+        0.16418169422471338,
+        0.44772206470739345
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        0.4450020879768609,
+        0.5815841791119377,
+        -0.7435630176084104,
+        -1.3193572595281724
+      ],
+      "metadata": {
+        "index": 23,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0023",
+      "seed": 1023,
+      "split": "dev",
+      "target_position": [
+        0.14604884162954512,
+        0.31488848689142934,
+        0.5820328194915523
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 24,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0024",
+      "seed": 1024,
+      "split": "held_out",
+      "target_position": [
+        0.20196342214314222,
+        -0.03953686690366303,
+        0.35553096194228195
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        -0.24227143692876274,
+        -0.23136720841556124,
+        0.4591515478788626,
+        0.48444787951440293
+      ],
+      "metadata": {
+        "index": 25,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0025",
+      "seed": 1025,
+      "split": "dev",
+      "target_position": [
+        0.31346605922521054,
+        0.07412827131474818,
+        0.2681008784004878
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        -0.8359991704014907,
+        0.12616641859336608,
+        -0.027944103665719977,
+        -0.2123002803088727
+      ],
+      "metadata": {
+        "index": 26,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0026",
+      "seed": 1026,
+      "split": "dev",
+      "target_position": [
+        0.32189540966704283,
+        0.0878160422816312,
+        0.2817194571791928
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "easy",
+      "initial_qpos": null,
+      "metadata": {
+        "index": 27,
+        "tier": "easy"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0027",
+      "seed": 1027,
+      "split": "validation",
+      "target_position": [
+        0.18201278918635838,
+        0.009056504494342135,
+        0.4373680656659451
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "medium",
+      "initial_qpos": [
+        -0.318621389955174,
+        0.3380242449096703,
+        -0.08157259033380448,
+        1.5540514148013131
+      ],
+      "metadata": {
+        "index": 28,
+        "tier": "medium"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0028",
+      "seed": 1028,
+      "split": "dev",
+      "target_position": [
+        0.3148716013838439,
+        -0.06552433678428796,
+        0.4836311081924459
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    },
+    {
+      "difficulty": "hard",
+      "initial_qpos": [
+        -0.5687713982629066,
+        -0.23663704385554185,
+        -0.030821418457362082,
+        0.11896566680963572
+      ],
+      "metadata": {
+        "index": 29,
+        "tier": "hard"
+      },
+      "qpos_noise": 0.0,
+      "scenario_id": "reach-default-v1-0029",
+      "seed": 1029,
+      "split": "held_out",
+      "target_position": [
+        0.23924554376148466,
+        0.30411482337755463,
+        0.2206625451899099
+      ],
+      "task_name": "reach",
+      "task_version": "v1"
+    }
+  ],
+  "suite_name": "reach-default",
+  "suite_version": "v1",
+  "task_name": "reach",
+  "task_version": "v1"
+}
