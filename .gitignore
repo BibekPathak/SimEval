@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.sqlite3
+*.db
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Artifacts & data outputs (large binaries stay out of git)
+datasets/*
+!datasets/.gitkeep
+artifacts/
+*.npz
+*.mp4
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
