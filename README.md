@@ -59,6 +59,33 @@ and no benchmark numbers or improvements are ever fabricated.
   handling, success dwell, policy behaviour and determinism, and split
   isolation.
 
+### Milestone 3 — runner, metrics, grader, artifacts
+
+- `simulation/runners/episode_runner.py`: executes one scenario for one policy
+  end to end — builds the env, resets with the scenario seed, steps the policy
+  under step/timeout/safety limits, records a trace, persists it, and returns a
+  graded `EpisodeResult`. Environment/construction/simulator errors are
+  captured, never raised past the runner, and never counted as success.
+- `simulation/runners/trace.py`: `TraceRecorder` captures per-step state
+  (qpos, qvel, EE/target pose, distance, action, reward, contacts) at a
+  configurable frequency, always keeping the initial step.
+- `simulation/graders/reach_grader.py`: deterministic, task-specific grader that
+  maps recorded evidence to a structured outcome with the deciding rule and an
+  explanation. **Task failures** (`TIMEOUT`, `TARGET_NOT_REACHED`, `COLLISION`)
+  are separated from **infrastructure failures** (`SIMULATOR_ERROR`,
+  `INVALID_ACTION`, `NUMERICAL_FAILURE`). The grader is testable without a
+  simulator.
+- `simulation/metrics/reach_metrics.py`: aggregate metrics computed from
+  persisted episodes — success rate (with numerator/denominator), completion
+  time (successes only), episode length, collision rate/steps, return
+  mean/median, throughput, and inference latency. Infrastructure failures are
+  excluded from denominators by default and reported separately.
+- `simulation/artifacts/store.py`: `ArtifactStore` abstraction with a
+  filesystem-backed `LocalArtifactStore` writing compressed `.npz` arrays under
+  a fixed root, with traversal/absolute-path rejection and a schema version.
+- 42 new tests covering grader rules, metric math, artifact round-trips and
+  path safety, runner termination/error handling, and reproducibility.
+
 ### Verified smoke-test output
 
 ```
@@ -115,6 +142,39 @@ These are actual results from the committed code and example suite on the
 development machine; they are not benchmark claims. Re-running with the same
 suite hash reproduces them exactly.
 
+### Milestone 3 demo — run, grade, aggregate
+
+`scripts/demo_m3.py` runs the full evaluation pipeline (runner → trace →
+artifact → grader → metrics) for one policy over a suite and prints the
+aggregate metric set.
+
+```console
+$ .venv/bin/python scripts/demo_m3.py --n 24
+======================================================================
+SimEval Milestone 3 demo — run -> grade -> aggregate (real episodes)
+======================================================================
+suite reach-default v1 hash=8914bc14392724a8
+policy: ik_planner_baseline   split: all   capture_every: 1
+----------------------------------------------------------------------
+episodes total          : 24
+evaluated (in denominator): 24
+infrastructure failures : 0
+success                 : 20/24  (83.3%)
+failure rate            : 16.7%
+completion time mean    : 0.2078 s (successes only)
+episode length mean     : 101.2917 steps
+collision rate          : 0.0%
+return mean / median    : 0.8333 / 1.0000
+throughput              : 8.4531 episodes/s
+mean policy inference   : 102.1819 ms/episode
+failure categories      : {'TIMEOUT': 4}
+artifact round-trip ok  : True
+======================================================================
+```
+
+These values come from real MuJoCo rollouts on the development machine.
+Throughput and latency are indicative only (no GPU; single CPU process).
+
 ## Requirements
 
 - Python 3.11–3.12 (3.12 verified)
@@ -141,7 +201,11 @@ make smoke
 # 3. Run the Milestone 2 demo (both policies on one seeded suite)
 .venv/bin/python scripts/demo_m2.py --n 30
 
-# 4. Run the quality gates
+# 4. Run the Milestone 3 demo (full pipeline: run -> grade -> aggregate)
+.venv/bin/python scripts/demo_m3.py --n 24
+.venv/bin/python scripts/demo_m3.py --n 24 --policy resolved_rate_candidate --split held_out
+
+# 5. Run the quality gates
 make lint
 make typecheck
 make test
@@ -194,7 +258,7 @@ components so it can be tested and reused without the backend or frontend.
 |-----------|-------|--------|
 | M1 | Scaffold, tooling, CI, headless MuJoCo smoke test | **Complete** |
 | M2 | Reach environment, policy interface, two controllers, seeded scenarios | **Complete** |
-| M3 | Episode runner, metrics, grader, artifact persistence, tests | Not started |
+| M3 | Episode runner, metrics, grader, artifact persistence, tests | **Complete** |
 | M4 | Experiment API, worker lifecycle, DB persistence, reproducibility | Not started |
 | M5 | Statistical comparison and regression detection | Not started |
 | M6 | React dashboard (overview, new evaluation, details, compare, inspector) | Not started |
@@ -203,12 +267,19 @@ components so it can be tested and reused without the backend or frontend.
 
 ## Known limitations
 
-- The environment, two policies, and scenario generation exist, but there is no
-  episode runner, metric computation, grader, persistence, or API yet. Success
-  counts in the M2 demo are simple booleans, not the full metric set.
+- Episodes run, are graded, and produce persisted artifacts and aggregate
+  metrics, but there is **no experiment API, database, worker lifecycle, or
+  dashboard** yet (Milestones 4–6). There is also no statistical comparison or
+  regression detection yet (Milestone 5): the M3 demo reports point estimates
+  with **no confidence intervals**.
+- Success-rate uncertainty is not reported in M3; episodes sharing a scenario
+  are correlated and must not be treated as independent samples for inference.
 - Both policies are deterministic classical controllers. There is **no learned
   policy** yet; do not read the baseline/candidate comparison as a model-quality
   claim.
+- Collision means EE-vs-floor contact, which is exact for this model because
+  only the end effector and floor are collidable. It is not a general collision
+  metric for arbitrary scenes.
 - The reach task is a self-authored kinematic 4-DOF task, not a benchmark. Its
   difficulty tiers are heuristic and may not be uniformly calibrated.
 - Rendering requires an external GL backend and is not exercised in CI unless a
@@ -216,6 +287,8 @@ components so it can be tested and reused without the backend or frontend.
 - Targets are sampled in an empirically estimated reachable shell; a few
   generated hard cases are near the workspace boundary and may be unreachable by
   either controller.
+- Throughput and latency are single-process CPU measurements and are not
+  performance guarantees.
 
 ## License
 
