@@ -26,7 +26,7 @@ install: venv
 		"scipy>=1.14,<2.0" "pyyaml>=6.0,<7.0"
 
 dev-deps: venv
-	uv pip install --python $(PY) "pytest>=8.3,<9.0" "ruff>=0.6,<1.0" "mypy>=1.11,<2.0" "pytest-cov>=5.0,<7.0"
+	uv pip install --python $(PY) "pytest>=8.3,<9.0" "ruff>=0.6,<1.0" "mypy>=1.11,<2.0" "pytest-cov>=5.0,<7.0" "httpx>=0.27"
 
 lint:
 	$(PY) -m ruff check .
@@ -43,6 +43,24 @@ test:
 smoke:
 	$(PY) scripts/smoke_sim.py
 
+api:
+	$(PY) -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+
+migrate:
+	$(PY) -m alembic upgrade head
+
+migration:
+	$(PY) -m alembic revision --autogenerate -m "$(m)"
+
+demo2:
+	$(PY) scripts/demo_m2.py --n 30
+
+demo3:
+	$(PY) scripts/demo_m3.py --n 24
+
+demo4:
+	$(PY) scripts/demo_m4.py --n 6
+
 clean:
-	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage
+	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage _t.db _mig.db
 	find . -name '__pycache__' -type d -prune -exec rm -rf {} +

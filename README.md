@@ -86,6 +86,49 @@ and no benchmark numbers or improvements are ever fabricated.
 - 42 new tests covering grader rules, metric math, artifact round-trips and
   path safety, runner termination/error handling, and reproducibility.
 
+### Milestone 4 — experiment API, worker, persistence, reproducibility
+
+- `backend/app/`: FastAPI application with structured logging, settings, and
+  consistent error responses.
+- SQLAlchemy 2.x models (`Task`, `Policy`, `ScenarioSuite`, `Experiment`,
+  `Episode`) with unique constraints and indexes; **Alembic** migrations
+  (`backend/alembic/`) that upgrade and downgrade cleanly.
+- `backend/app/services/experiment_service.py`: experiment creation with binding
+  validation, an enforced **state machine** (`QUEUED → RUNNING → COMPLETED`,
+  plus `FAILED`/`CANCELLED`), cooperative cancellation, metric aggregation,
+  compatibility-aware comparison, and reproduction-from-config.
+- `backend/app/workers/experiment_worker.py`: a **bounded local worker** (single
+  thread, configurable concurrency) that executes real episodes, persists them,
+  and **recovers interrupted experiments** on restart (no job is left "running
+  forever"). Cancellation is checked between episodes.
+- REST API under `/api/v1` (see below), with Pydantic validation and OpenAPI
+  docs at `/docs`. No API parameter is ever a filesystem path; no user code is
+  executed.
+- `scripts/demo_m4.py`: full API lifecycle demo.
+- Dockerfile and docker-compose for a one-command container run.
+
+#### API endpoints (Milestone 4)
+
+```text
+GET  /api/v1/health
+GET  /api/v1/tasks
+GET  /api/v1/policies
+GET  /api/v1/scenario-suites
+POST /api/v1/scenario-suites
+GET  /api/v1/scenario-suites/{suite_name}/{suite_version}
+POST /api/v1/experiments
+GET  /api/v1/experiments
+GET  /api/v1/experiments/compare?a=&b=
+GET  /api/v1/experiments/{id}
+POST /api/v1/experiments/{id}/start
+POST /api/v1/experiments/{id}/cancel
+POST /api/v1/experiments/{id}/reproduce
+GET  /api/v1/experiments/{id}/episodes
+GET  /api/v1/experiments/{id}/metrics
+GET  /api/v1/episodes/{id}
+GET  /api/v1/episodes/{id}/artifacts
+```
+
 ### Verified smoke-test output
 
 ```
@@ -175,6 +218,40 @@ artifact round-trip ok  : True
 These values come from real MuJoCo rollouts on the development machine.
 Throughput and latency are indicative only (no GPU; single CPU process).
 
+### Milestone 4 demo — API lifecycle
+
+`scripts/demo_m4.py` drives the full API: create a suite, run two policies
+through the worker, compare them, inspect an episode's artifacts, and reproduce
+an experiment. (Uses an in-process TestClient against the real DB, worker, and
+simulator.)
+
+```console
+$ .venv/bin/python scripts/demo_m4.py --n 6
+======================================================================
+SimEval Milestone 4 demo — experiment API lifecycle (real worker + sim)
+======================================================================
+suite demo-m4 hash=254420ba3ac9ccd6
+----------------------------------------------------------------------
+ik_planner_baseline      status=COMPLETED episodes=6 success=5/6
+resolved_rate_candidate  status=COMPLETED episodes=6 success=5/6
+----------------------------------------------------------------------
+comparison compatible=True shared=6
+  success_rate                 a=0.8333 b=0.8333 delta=0.0000
+  episode_length_mean_steps    a=99.1667 b=234.1667 delta=135.0000
+  completion_time_mean_s       a=0.1950 b=1.0050 delta=0.8100
+  collision_rate               a=0.0000 b=0.0000 delta=0.0000
+  return_mean                  a=0.8333 b=0.8333 delta=0.0000
+  ! only 6 shared scenarios; sample size too small for strong conclusions
+----------------------------------------------------------------------
+episode exp_...-demo-m4-v1-0000-... outcome=SUCCESS final_dist=0.0306 m
+artifacts exists=True arrays=['action', 'collision', 'ee_pos', ...]
+reproduction exp_... from exp_... hash_match=True
+======================================================================
+```
+
+This is a point-estimate comparison only: **no confidence intervals** are
+computed yet (Milestone 5).
+
 ## Requirements
 
 - Python 3.11–3.12 (3.12 verified)
@@ -205,10 +282,36 @@ make smoke
 .venv/bin/python scripts/demo_m3.py --n 24
 .venv/bin/python scripts/demo_m3.py --n 24 --policy resolved_rate_candidate --split held_out
 
-# 5. Run the quality gates
+# 5. Run the Milestone 4 demo (API lifecycle: run -> compare -> reproduce)
+.venv/bin/python scripts/demo_m4.py --n 6
+
+# 6. Run the quality gates
 make lint
 make typecheck
 make test
+```
+
+### Running the API
+
+```bash
+# Apply migrations and start the server
+make migrate
+make api           # http://127.0.0.1:8000  (OpenAPI docs at /docs)
+
+# Or with the helper script
+scripts/run_api.sh 127.0.0.1 8000
+
+# Example requests
+curl -s localhost:8000/api/v1/health
+curl -s -X POST localhost:8000/api/v1/scenario-suites \
+  -H 'content-type: application/json' \
+  -d '{"suite_name":"demo","suite_version":"v1","n_scenarios":8}'
+curl -s -X POST localhost:8000/api/v1/experiments \
+  -H 'content-type: application/json' \
+  -d '{"name":"baseline","policy_name":"ik_planner_baseline","suite_name":"demo","suite_version":"v1"}'
+
+# Docker
+docker compose up --build
 ```
 
 ### Rendering troubleshooting
@@ -229,8 +332,10 @@ If `--render` reports a skipped backend:
 
 ```
 simeval/
-  backend/app/          FastAPI app, DB, services, workers   (later milestones)
-  backend/tests/        Backend tests
+  backend/
+    app/                FastAPI app: api, core, db, models, schemas, services, workers
+    alembic/            Database migrations
+    tests/              Backend tests (API, state machine, worker)
   simulation/
     environments/       MJCF models, reach task, env, kinematics
     policies/           Policy interface, registry, two controllers
@@ -244,8 +349,10 @@ simeval/
   frontend/             React + TypeScript dashboard        (later milestones)
   configs/              Example configurations and scenario suites
   datasets/             Dataset manifests (binaries git-ignored)
-  scripts/              Developer scripts (smoke_sim.py, demo_m2.py)
+  scripts/              Developer scripts (smoke_sim.py, demo_m2/m3/m4.py, run_api.sh)
   docs/                 Technical documentation
+  Dockerfile            Headless container image
+  docker-compose.yml    Local container orchestration
   .github/workflows/    CI
 ```
 
@@ -259,7 +366,7 @@ components so it can be tested and reused without the backend or frontend.
 | M1 | Scaffold, tooling, CI, headless MuJoCo smoke test | **Complete** |
 | M2 | Reach environment, policy interface, two controllers, seeded scenarios | **Complete** |
 | M3 | Episode runner, metrics, grader, artifact persistence, tests | **Complete** |
-| M4 | Experiment API, worker lifecycle, DB persistence, reproducibility | Not started |
+| M4 | Experiment API, worker lifecycle, DB persistence, reproducibility | **Complete** |
 | M5 | Statistical comparison and regression detection | Not started |
 | M6 | React dashboard (overview, new evaluation, details, compare, inspector) | Not started |
 | M7 | Docker, docs, end-to-end verification | Not started |
@@ -268,12 +375,18 @@ components so it can be tested and reused without the backend or frontend.
 ## Known limitations
 
 - Episodes run, are graded, and produce persisted artifacts and aggregate
-  metrics, but there is **no experiment API, database, worker lifecycle, or
-  dashboard** yet (Milestones 4–6). There is also no statistical comparison or
-  regression detection yet (Milestone 5): the M3 demo reports point estimates
-  with **no confidence intervals**.
-- Success-rate uncertainty is not reported in M3; episodes sharing a scenario
-  are correlated and must not be treated as independent samples for inference.
+  metrics, but there is **no dashboard** yet (Milestone 6). There is also no
+  statistical comparison or regression detection yet (Milestone 5): comparisons
+  report point estimates with **no confidence intervals**.
+- The experiment **comparison endpoint is descriptive only** in M4 — it reports
+  absolute/relative deltas and a small-sample warning, but makes **no
+  significance claim**. Do not interpret a delta as an improvement.
+- Success-rate uncertainty is not reported; episodes sharing a scenario are
+  correlated and must not be treated as independent samples for inference.
+- The worker is a **single-process, single-threaded bounded local executor**. It
+  is correct and restart-safe, but not horizontally scalable.
+- SQLite is used by default; PostgreSQL compatibility is intended but not yet
+  exercised in CI.
 - Both policies are deterministic classical controllers. There is **no learned
   policy** yet; do not read the baseline/candidate comparison as a model-quality
   claim.

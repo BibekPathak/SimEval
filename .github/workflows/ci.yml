@@ -30,7 +30,7 @@ jobs:
             "fastapi>=0.115,<1.0" "uvicorn[standard]>=0.30,<1.0" \
             "pydantic>=2.9,<3.0" "pydantic-settings>=2.4,<3.0" \
             "sqlalchemy>=2.0.35,<3.0" "alembic>=1.13,<2.0" \
-            "scipy>=1.14,<2.0" pyyaml \
+            "scipy>=1.14,<2.0" pyyaml httpx \
             "pytest>=8.3,<9.0" "ruff>=0.6,<1.0" "mypy>=1.11,<2.0"
 
       - name: Ruff lint
@@ -41,6 +41,13 @@ jobs:
 
       - name: Mypy (core interfaces)
         run: .venv/bin/mypy
+
+      - name: Alembic migration upgrade/downgrade check
+        env:
+          SIMEVAL_DATABASE_URL: sqlite:///./_ci_mig.db
+        run: |
+          .venv/bin/alembic upgrade head
+          .venv/bin/alembic downgrade base
 
       - name: Pytest
         run: .venv/bin/pytest

@@ -1,0 +1,19 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      SIMEVAL_DATABASE_URL: sqlite:////data/simeval.db
+      SIMEVAL_ARTIFACT_ROOT: /data/artifacts
+      SIMEVAL_MAX_CONCURRENT_EXPERIMENTS: "1"
+    volumes:
+      - simeval-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  simeval-data:
