@@ -122,8 +122,8 @@ def wilson_interval(successes: int, n: int, confidence: float = 0.95) -> Interva
 
 
 def paired_bootstrap_interval(
-    a_values: Sequence[float],
-    b_values: Sequence[float],
+    a_values: Sequence[float] | np.ndarray,
+    b_values: Sequence[float] | np.ndarray,
     *,
     confidence: float = 0.95,
     n_resamples: int = 10_000,
@@ -168,8 +168,8 @@ def _paired_success_bootstrap(
     if a.shape != b.shape or a.size == 0:
         return Interval(None, None, None, confidence, "paired_bootstrap_success")
     return paired_bootstrap_interval(
-        float(a.tolist()),
-        float(b.tolist()),
+        a,
+        b,
         confidence=confidence,
         n_resamples=n_resamples,
         seed=seed,

@@ -129,6 +129,32 @@ GET  /api/v1/episodes/{id}
 GET  /api/v1/episodes/{id}/artifacts
 ```
 
+### Milestone 6 — React dashboard
+
+- `frontend/`: Vite + React 18 + TypeScript + Tailwind CSS single-page app. It
+  consumes only the `/api/v1` REST endpoints (no mocked data, no backend
+  imports). A Vite dev proxy forwards `/api` to the backend so no CORS setup is
+  required in development; CORS is also enabled on the backend for direct access.
+- Pages:
+  - **Overview** — experiment/suite/task counts, latest evaluation, success-rate
+    trend, and a simple same-policy regression watch, plus a path to create an
+    evaluation.
+  - **Tasks & Suites** — tasks with their specs, scenario suites with split
+    counts, and a scenario inspector.
+  - **New Evaluation** — task/policy/suite/split selection, limits, validation,
+    a review panel, and create-and-start.
+  - **Experiment details** — status, aggregate metrics, outcome distribution,
+    configuration, and a filterable, sortable episode table.
+  - **Policy comparison** — per-metric deltas with **95% intervals, verdicts,
+    per-arm Wilson intervals, an evidence verdict, and compatibility warnings**
+    (the M5 statistics surfaced in the UI).
+  - **Episode inspection** — outcome, the grader's deciding rule and explanation,
+    recorded scalars, and the persisted artifact array shapes.
+- Honest data handling: the episode inspector shows recorded evidence and
+  artifact **shapes**; it does not display reconstructed or invented
+  trajectories. Per-step array plotting awaits an array-content endpoint.
+- `npm run lint`, `npm run typecheck`, and `npm run build` all pass; CI runs them.
+
 ### Verified smoke-test output
 
 ```
@@ -252,6 +278,33 @@ reproduction exp_... from exp_... hash_match=True
 This is a point-estimate comparison only: **no confidence intervals** are
 computed yet (Milestone 5).
 
+### Milestone 5 statistics — surfaced in the dashboard
+
+The M5 comparison engine (Wilson intervals, paired bootstrap, verdicts,
+regression thresholds) is exposed through `GET /api/v1/experiments/compare` and
+rendered on the **Compare** page. See `docs/evaluation-methodology.md` for the
+definitions and `docs/research-log.md` for the reasoning behind the thresholds.
+
+### Milestone 6 dashboard — verified workflow
+
+The dashboard was exercised against a live backend (real worker + simulator)
+using an in-browser run. Verified end to end:
+
+1. **Overview** rendered live counts (2 experiments, 1 suite, 1 task), the latest
+   evaluation (10/12, 83.3%), and the success-rate trend — all from the API.
+2. **Compare** for the two runs rendered the M5 statistics: `episode_length_mean_steps`
+   and `completion_time_mean_s` marked **REGRESSED** with 95% intervals, success
+   rate **INCONCLUSIVE**, and per-arm Wilson intervals.
+3. **Experiment details** listed aggregate metrics, the outcome distribution, and
+   a sortable episode table.
+4. **Episode inspection** showed the grader's deciding rule, the explanation, the
+   recorded scalars, and the artifact array shapes (e.g. `qpos [81, 4]`).
+5. **New evaluation** validated input, created and started an experiment, and the
+   details page polled it through `RUNNING → COMPLETED`.
+
+No screenshot is embedded here; the workflow above is reproducible with
+`make api` + `make frontend-dev` and the steps in *Running the dashboard*.
+
 ## Requirements
 
 - Python 3.11–3.12 (3.12 verified)
@@ -290,6 +343,24 @@ make lint
 make typecheck
 make test
 ```
+
+### Running the dashboard
+
+```bash
+# Terminal 1: backend API (must be running for the dashboard)
+make migrate
+make api                 # http://127.0.0.1:8000
+
+# Terminal 2: frontend dev server (proxies /api to the backend)
+make frontend-install    # first time only
+make frontend-dev        # http://127.0.0.1:5173
+
+# Production bundle
+make frontend-build      # emits frontend/dist
+```
+
+The dashboard reads exclusively from the REST API. Create a scenario suite and
+a couple of experiments (via the UI or `curl`) to populate the views.
 
 ### Running the API
 
@@ -346,7 +417,15 @@ simeval/
     artifacts/          Episode artifact storage
     adapters/           Simulator adapter contract
     tests/              Simulation tests
-  frontend/             React + TypeScript dashboard        (later milestones)
+  frontend/
+    src/
+      api/              Typed REST client
+      components/       Layout, panels, badges, states
+      hooks/            Async data + polling hooks
+      lib/              Formatting helpers
+      pages/            Overview, Tasks, New, Details, Compare, Episode
+      types/            API contract types
+    package.json        React + Vite + Tailwind
   configs/              Example configurations and scenario suites
   datasets/             Dataset manifests (binaries git-ignored)
   scripts/              Developer scripts (smoke_sim.py, demo_m2/m3/m4.py, run_api.sh)
@@ -368,25 +447,26 @@ components so it can be tested and reused without the backend or frontend.
 | M3 | Episode runner, metrics, grader, artifact persistence, tests | **Complete** |
 | M4 | Experiment API, worker lifecycle, DB persistence, reproducibility | **Complete** |
 | M5 | Statistical comparison and regression detection | Not started |
-| M6 | React dashboard (overview, new evaluation, details, compare, inspector) | Not started |
+| M6 | React dashboard (overview, new evaluation, details, compare, inspector) | **Complete** |
 | M7 | Docker, docs, end-to-end verification | Not started |
 | M8 | Optional vision / learned-policy extension | Not started |
 
 ## Known limitations
 
 - Episodes run, are graded, and produce persisted artifacts and aggregate
-  metrics, but there is **no dashboard** yet (Milestone 6). There is also no
-  statistical comparison or regression detection yet (Milestone 5): comparisons
-  report point estimates with **no confidence intervals**.
-- The experiment **comparison endpoint is descriptive only** in M4 — it reports
-  absolute/relative deltas and a small-sample warning, but makes **no
-  significance claim**. Do not interpret a delta as an improvement.
-- Success-rate uncertainty is not reported; episodes sharing a scenario are
-  correlated and must not be treated as independent samples for inference.
+- The dashboard is complete for the evaluation workflow, but the **episode
+  inspector does not yet plot per-step trajectories**: the artifact endpoint
+  returns array shapes only, so no time-series or replay is shown. This is
+  deliberate — the UI does not invent trajectory data. An array-content endpoint
+  and plotting are a follow-up.
+- The comparison view surfaces confidence intervals and verdicts (M5), but with
+  small suites the verdict will read **INCONCLUSIVE**; interpret accordingly.
 - The worker is a **single-process, single-threaded bounded local executor**. It
   is correct and restart-safe, but not horizontally scalable.
 - SQLite is used by default; PostgreSQL compatibility is intended but not yet
   exercised in CI.
+- The dashboard has **no authentication**; do not expose it to untrusted
+  networks.
 - Both policies are deterministic classical controllers. There is **no learned
   policy** yet; do not read the baseline/candidate comparison as a model-quality
   claim.

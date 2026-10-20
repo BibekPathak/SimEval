@@ -73,11 +73,57 @@ scenarios.
   artifacts), compare, reproduce, and persistence across restart all verified
   end to end against a real uvicorn server and the TestClient.
 
+## M5 — Statistical comparison and regression detection
+
+**Goal:** answer whether an apparent improvement is meaningful, without
+over-claiming.
+
+- Methods: **Wilson score interval** for per-arm success rates and the paired
+  success-rate difference; **paired bootstrap** over scenario differences for
+  continuous metrics. Scenario is the resampling unit; timesteps are never
+  treated as independent samples.
+- Verdicts are direction-aware (`higher_is_better` / `lower_is_better`): a metric
+  is `IMPROVED`/`REGRESSED` only when the paired 95% interval excludes zero **and**
+  the effect clears a per-metric threshold; otherwise `INCONCLUSIVE`. Below a
+  minimum of 10 paired scenarios the report is explicitly "insufficient evidence".
+- Infrastructure failures are excluded from paired comparisons; they are not
+  evidence about policy quality.
+- Observation on the real data: the candidate controller reaches similar success
+  but takes markedly longer (mean ~250 steps vs ~100). With 12 shared scenarios
+  the comparison flags `episode_length_mean_steps` and `completion_time_mean_s`
+  as **REGRESSED** and success rate **INCONCLUSIVE** — an honest result, not a
+  win.
+- Fixed during this milestone: mypy flagged `Interval` optional fields and
+  ndarray arguments; the bootstrap signature now accepts array-likes and the
+  tests narrow optionals explicitly. mypy is clean across the repo.
+
+## M6 — React dashboard
+
+**Goal:** a usable, professional research tool over the real API.
+
+- Vite + React 18 + TypeScript + Tailwind. Data flows only through a typed REST
+  client; nothing is mocked. A Vite dev proxy avoids CORS in development (CORS is
+  also enabled on the backend).
+- Pages: Overview, Tasks & Suites, New Evaluation, Experiment details, Compare,
+  Episode inspection.
+- The Compare page surfaces the M5 report directly (deltas, 95% intervals,
+  verdicts, per-arm Wilson intervals, evidence flag, compatibility warnings).
+- Honesty constraint honored: the episode inspector shows the grader's deciding
+  rule, recorded scalars, and artifact **array shapes**, but deliberately does
+  **not** plot trajectories, because the artifacts endpoint returns only shapes.
+  Plotting awaits an array-content endpoint. No invented data is displayed.
+- Verified in a real browser against a live backend: overview counts, the
+  regression-flagged comparison, the episode table with sorting/filtering, the
+  artifact shapes, and a create-and-start flow that polls RUNNING → COMPLETED.
+- Failed approach: `tsc` rejected `import.meta.env` and `__dirname`; fixed with a
+  `vite-env.d.ts`, `@types/node`, and an ESM-safe `import.meta.url` alias.
+
 ## Next steps
 
-- **M5** statistical comparison: scenario-level pairing, Wilson/binomial CIs for
-  success rate, paired bootstrap for continuous metrics, configurable regression
-  thresholds, and an explicit "insufficient evidence" verdict.
-- **M6** dashboard consuming the `/api/v1` endpoints.
-- Revisit the candidate vs. baseline tradeoff with proper uncertainty before any
-  claim about improvement.
+- **M7** Docker/CI hardening, full docs, and a recorded end-to-end demonstration.
+- Add an artifact **array-content** endpoint so the episode inspector can plot
+  real per-step time-series (state vs. target, action traces, contacts).
+- **M8** (optional) a learned or vision-based policy with a documented,
+  reproducible pipeline.
+- Revisit the candidate vs. baseline tradeoff with larger suites before any
+  performance claim.

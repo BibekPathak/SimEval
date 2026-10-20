@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.app.api import routes_experiments, routes_registry
@@ -53,6 +54,17 @@ def create_app() -> FastAPI:
         version=__version__,
         description="Simulation-driven robot learning evaluation platform",
         lifespan=lifespan,
+    )
+
+    # CORS: the Vite dev server proxies /api to this service in development, but
+    # direct browser access (e.g. VITE_API_BASE pointing at :8000) is also
+    # supported. Origins are configurable; defaults cover local development.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     @app.exception_handler(RequestValidationError)

@@ -10,6 +10,10 @@ help:
 	@echo "  make typecheck   Run mypy on core interfaces"
 	@echo "  make test        Run pytest"
 	@echo "  make smoke       Run the headless MuJoCo smoke test"
+	@echo "  make api         Run the FastAPI backend (reload)"
+	@echo "  make frontend-install  Install frontend dependencies"
+	@echo "  make frontend-dev      Run the Vite dev server"
+	@echo "  make frontend-build    Build the production frontend bundle"
 	@echo "  make clean       Remove caches"
 
 PY := .venv/bin/python
@@ -60,6 +64,19 @@ demo3:
 
 demo4:
 	$(PY) scripts/demo_m4.py --n 6
+
+# --- frontend -----------------------------------------------------------------
+frontend-install:
+	cd frontend && npm install
+
+frontend-dev:
+	cd frontend && npm run dev
+
+frontend-build:
+	cd frontend && npm run build
+
+frontend-check:
+	cd frontend && npm run lint && npm run typecheck
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov .coverage _t.db _mig.db

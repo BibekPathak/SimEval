@@ -1,6 +1,6 @@
 # Architecture
 
-Status: reflects **Milestones 1–4**.
+Status: reflects **Milestones 1–6**.
 
 ## 1. Layering
 
@@ -26,6 +26,11 @@ backend/app/           HTTP + persistence + orchestration
   main.py              app factory + lifespan
 
 frontend/              React dashboard (Milestone 6)
+  src/api/             typed REST client (only network boundary in the UI)
+  src/hooks/           async + polling hooks with loading/error state
+  src/components/      layout, panels, badges, states
+  src/pages/           Overview, Tasks, New, Details, Compare, Episode
+  src/types/           API contract types
 ```
 
 **Rule:** `simulation/` must never import `backend/`. The backend depends on the
@@ -33,6 +38,11 @@ simulation package, never the reverse. This keeps the evaluation engine testable
 and reusable without HTTP or a database. The single coupling point is
 `backend/app/services/registry_sync.py`, which reads the policy registry and the
 default task spec to seed the database.
+
+**Frontend rule:** the dashboard reads exclusively through `src/api/client.ts`
+against `/api/v1`. It neither imports backend internals nor maintains a separate
+fake data model. In development the Vite dev server proxies `/api` to the
+backend; CORS is enabled on the backend for direct browser access.
 
 ## 2. Request / execution flow
 

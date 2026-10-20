@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     default_page_size: int = 50
     max_page_size: int = 500
 
+    # CORS origins for the dashboard (development defaults).
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
     @property
     def artifact_path(self) -> Path:
         return Path(self.artifact_root)
