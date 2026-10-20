@@ -21,6 +21,11 @@ from backend.app.services.state_machine import (
     coerce,
     is_terminal,
 )
+from simulation.metrics.comparison import (
+    ComparisonConfig,
+    PairedScenario,
+    build_report,
+)
 from simulation.metrics.reach_metrics import compute_metrics
 from simulation.runners.outcome import EpisodeResult
 from simulation.scenarios.generator import ScenarioSuite as ScenarioSuiteData
@@ -269,7 +274,13 @@ _COMPARABLE_FIELDS = (
 )
 
 
-def compare_experiments(session: Session, a_id: str, b_id: str) -> dict[str, Any]:
+def compare_experiments(
+    session: Session,
+    a_id: str,
+    b_id: str,
+    *,
+    config: ComparisonConfig | None = None,
+) -> dict[str, Any]:
     a = get_experiment(session, a_id)
     b = get_experiment(session, b_id)
     if a is None or b is None:
@@ -297,57 +308,77 @@ def compare_experiments(session: Session, a_id: str, b_id: str) -> dict[str, Any
             f"only {len(shared)} shared scenarios; sample size too small for strong conclusions"
         )
 
-    ma = compute_metrics([_row_to_result(e) for e in a_eps.values()], timestep_s=_ts(session, a))
-    mb = compute_metrics([_row_to_result(e) for e in b_eps.values()], timestep_s=_ts(session, b))
-    metrics = [
-        _compare_metric("success_rate", ma.success_rate, mb.success_rate, warnings),
-        _compare_metric(
-            "episode_length_mean_steps",
-            ma.episode_length_mean_steps,
-            mb.episode_length_mean_steps,
-            warnings,
-        ),
-        _compare_metric(
-            "completion_time_mean_s", ma.completion_time_mean_s, mb.completion_time_mean_s, warnings
-        ),
-        _compare_metric("collision_rate", ma.collision_rate, mb.collision_rate, warnings),
-        _compare_metric("return_mean", ma.return_mean, mb.return_mean, warnings),
-    ]
+    ts_a = _ts(session, a)
+    ts_b = _ts(session, b)
+    pairs = [_build_pair(a_eps[sid], b_eps[sid], ts_a, ts_b) for sid in shared]
 
-    cat_delta: dict[str, int] = {}
-    for categories in (ma.failure_categories, mb.failure_categories):
-        for key in categories:
-            cat_delta.setdefault(key, 0)
-    for key in cat_delta:
-        cat_delta[key] = mb.failure_categories.get(key, 0) - ma.failure_categories.get(key, 0)
+    comparison_config = config or ComparisonConfig()
+    report = build_report(pairs, config=comparison_config)
+
+    # Descriptive aggregate metrics over each arm (all episodes, not only shared).
+    ma = compute_metrics([_row_to_result(e) for e in a_eps.values()], timestep_s=ts_a)
+    mb = compute_metrics([_row_to_result(e) for e in b_eps.values()], timestep_s=ts_b)
+
+    if not compatible:
+        warnings.append(
+            "evaluation settings differ; treat any change as confounded by configuration"
+        )
 
     return {
         "a": a_id,
         "b": b_id,
         "compatible": compatible,
-        "warnings": warnings,
+        "warnings": warnings + report.warnings,
         "n_scenarios_a": len(a_eps),
         "n_scenarios_b": len(b_eps),
         "shared_scenarios": len(shared),
-        "metrics": metrics,
-        "failure_category_delta": cat_delta,
+        "metrics": [m.to_dict() for m in report.metrics],
+        "failure_category_delta": _failure_delta(ma, mb),
+        "sufficient_evidence": report.sufficient_evidence,
+        "summary": report.summary,
+        "aggregate_a": ma.to_dict(),
+        "aggregate_b": mb.to_dict(),
     }
+
+
+def _build_pair(a_row: Episode, b_row: Episode, ts_a: float, ts_b: float) -> PairedScenario:
+    from simulation.runners.outcome import Outcome, is_infrastructure_failure
+
+    def _infra(row: Episode) -> bool:
+        try:
+            return is_infrastructure_failure(Outcome(row.outcome))
+        except ValueError:
+            return False
+
+    return PairedScenario(
+        scenario_id=a_row.scenario_id,
+        a_success=a_row.success,
+        b_success=b_row.success,
+        a_return=a_row.return_sum,
+        b_return=b_row.return_sum,
+        a_steps=float(a_row.steps),
+        b_steps=float(b_row.steps),
+        a_collision=float(a_row.collision_steps),
+        b_collision=float(b_row.collision_steps),
+        a_completion_s=a_row.steps * ts_a,
+        b_completion_s=b_row.steps * ts_b,
+        a_infrastructure_failure=_infra(a_row),
+        b_infrastructure_failure=_infra(b_row),
+    )
+
+
+def _failure_delta(ma, mb) -> dict[str, int]:
+    delta: dict[str, int] = {}
+    for categories in (ma.failure_categories, mb.failure_categories):
+        for key in categories:
+            delta.setdefault(key, 0)
+    for key in delta:
+        delta[key] = mb.failure_categories.get(key, 0) - ma.failure_categories.get(key, 0)
+    return delta
 
 
 def _ts(session: Session, experiment: Experiment) -> float:
     return _task_timestep(session, experiment.task_name, experiment.task_version)
-
-
-def _compare_metric(
-    name: str, a: float | None, b: float | None, warnings: list[str]
-) -> dict[str, Any]:
-    delta = None
-    relative = None
-    if a is not None and b is not None:
-        delta = b - a
-        if a != 0:
-            relative = (b - a) / abs(a)
-    return {"metric": name, "a": a, "b": b, "delta": delta, "relative": relative}
 
 
 # ----------------------------------------------------------------- reproduction

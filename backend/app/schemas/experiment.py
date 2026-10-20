@@ -103,10 +103,19 @@ class EpisodeArtifactsOut(BaseModel):
 
 class ComparisonMetric(BaseModel):
     metric: str
+    unit: str = ""
+    direction: str = "neutral"
     a: float | None
     b: float | None
     delta: float | None
     relative: float | None
+    ci_low: float | None = None
+    ci_high: float | None = None
+    confidence: float = 0.95
+    method: str = ""
+    n_pairs: int = 0
+    verdict: str = "MISSING"
+    reason: str = ""
 
 
 class CompareOut(BaseModel):
@@ -119,6 +128,8 @@ class CompareOut(BaseModel):
     shared_scenarios: int
     metrics: list[ComparisonMetric]
     failure_category_delta: dict[str, int]
+    sufficient_evidence: bool = False
+    summary: str = ""
 
 
 class ReproduceOut(BaseModel):

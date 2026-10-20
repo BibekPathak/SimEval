@@ -246,6 +246,16 @@ def test_compare_requires_matching_settings(client) -> None:
     assert cmp["shared_scenarios"] == 6
     metric_names = {m["metric"] for m in cmp["metrics"]}
     assert {"success_rate", "episode_length_mean_steps"} <= metric_names
+    # Milestone 5: point estimates carry intervals, verdicts, and an evidence flag.
+    assert "sufficient_evidence" in cmp
+    assert "summary" in cmp
+    sr = next(m for m in cmp["metrics"] if m["metric"] == "success_rate")
+    assert sr["verdict"] in {"IMPROVED", "REGRESSED", "INCONCLUSIVE", "MISSING"}
+    assert sr["ci_low"] is not None and sr["ci_high"] is not None
+    assert sr["ci_low"] <= sr["ci_high"]
+    # 6 shared scenarios is below the default minimum for a verdict.
+    assert cmp["sufficient_evidence"] is False
+    assert any("below the minimum" in w for w in cmp["warnings"])
 
 
 def test_compare_incompatible_experiments_warns(client) -> None:
@@ -308,3 +318,19 @@ def test_list_experiments_and_filter(client) -> None:
     assert any(e["experiment_id"] == eid for e in completed)
     bad = client.get("/api/v1/experiments", params={"status": "NOPE"})
     assert bad.status_code == 422
+
+
+def test_compare_sufficient_evidence_on_large_suite(client) -> None:
+    # 24 shared scenarios is above the default minimum of 10.
+    _make_suite(client, "sbig", 24)
+    a = _make_experiment(client, "sbig", policy="ik_planner_baseline")
+    b = _make_experiment(client, "sbig", policy="resolved_rate_candidate")
+    for exp in (a, b):
+        client.post(f"/api/v1/experiments/{exp['experiment_id']}/start")
+        _wait(client, exp["experiment_id"])
+    cmp = client.get(
+        "/api/v1/experiments/compare",
+        params={"a": a["experiment_id"], "b": b["experiment_id"]},
+    ).json()
+    assert cmp["shared_scenarios"] == 24
+    assert cmp["sufficient_evidence"] is True
