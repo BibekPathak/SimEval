@@ -155,6 +155,24 @@ GET  /api/v1/episodes/{id}/artifacts
   trajectories. Per-step array plotting awaits an array-content endpoint.
 - `npm run lint`, `npm run typecheck`, and `npm run build` all pass; CI runs them.
 
+### Milestone 7 — packaging, docs, and end-to-end verification
+
+- **Single-container production image:** a multi-stage `Dockerfile` builds the
+  React dashboard and serves it from the same origin as the API (SPA fallback),
+  so `docker compose up --build` gives one URL for both.
+- **One-command development:** `scripts/dev.sh` (or `make dev`) applies
+  migrations and starts the backend and dashboard together.
+- **End-to-end smoke test:** `scripts/smoke_e2e.py` (`make e2e`) drives the whole
+  workflow through the real API, database, worker, and simulator on an isolated
+  temp database, including restart persistence.
+- **Benchmark harness:** `scripts/benchmark.py` (`make benchmark`) measures real
+  throughput/latency and regenerates `docs/benchmarking.md`.
+- **Documentation:** `docs/architecture.md`, `evaluation-methodology.md`,
+  `data-model.md`, `benchmarking.md`, `limitations.md`, `research-log.md`, and
+  `troubleshooting.md`.
+- **CI** runs backend lint/format/type-check/tests, a migration up/down check,
+  the headless smoke test, and the frontend lint/type-check/build.
+
 ### Verified smoke-test output
 
 ```
@@ -305,6 +323,69 @@ using an in-browser run. Verified end to end:
 No screenshot is embedded here; the workflow above is reproducible with
 `make api` + `make frontend-dev` and the steps in *Running the dashboard*.
 
+### Requirement: the complete workflow (Milestone 7)
+
+The full workflow from §17 of the project brief was executed and verified. The
+commands and their actual output:
+
+**1–2. Start the application and open the dashboard.**
+
+```console
+$ make migrate && make api        # backend on :8000, dashboard bundled in container
+$ docker compose up --build       # OR: single container serving UI + API on :8000
+```
+
+**3–4. Select a suite and run the baseline policy.**
+
+```console
+$ curl -s -X POST localhost:8000/api/v1/scenario-suites \
+    -H 'content-type: application/json' \
+    -d '{"suite_name":"demo","suite_version":"v1","n_scenarios":12}'
+{"suite_name":"demo","content_hash":"73cf3cb5bf59c0f6","counts":{"dev":5,"validation":4,"held_out":3}}
+```
+
+**5–8. Run both policies, inspect outcomes, compare, and inspect a failure.**
+Reproduced deterministically by the end-to-end smoke test:
+
+```console
+$ make e2e
+==================================================================
+SimEval end-to-end smoke test
+==================================================================
+[PASS] health               ok
+[PASS] create_suite         d6c3ba332f6ff18b
+[PASS] run_ik_planner_baseline 7/8 success
+[PASS] run_resolved_rate_candidate 7/8 success
+[PASS] compare              Inconclusive: only 8 paired scenarios. Report point estimates as descriptive only; no improvement/regression claim is supported.
+[PASS] inspect_failure      TIMEOUT: steps >= max_steps (400) without success
+[PASS] reproduce            exp_7253a3fb01124c97 matches original
+[PASS] restart_persistence  COMPLETED
+==================================================================
+E2E: OK
+==================================================================
+```
+
+**9. Re-run an experiment from its saved configuration** — the `reproduce` step
+above rebuilds the experiment from stored policy config, suite version, and
+seeds, and confirms an identical success count.
+
+**10. Restart and confirm results persist** — the `restart_persistence` step
+re-enters the application lifespan and re-reads the completed experiment.
+
+**Containerized verification (real Docker image):**
+
+```console
+$ docker build -t simeval:test . && docker run -d -p 8899:8000 simeval:test
+$ curl -s localhost:8899/api/v1/health           # status: ok
+$ curl -s localhost:8899/ | grep title           # <title>SimEval — Robot Learning Evaluation</title>
+# running a 10-scenario experiment inside the container:
+#   status COMPLETED · metrics {n_success: 9, n_evaluated: 10, success_rate: 0.9}
+#   episode0 SUCCESS · artifact persisted
+```
+
+All steps above were executed on the development machine. No unexecuted
+workflow is reported as verified.
+
 ## Requirements
 
 - Python 3.11–3.12 (3.12 verified)
@@ -338,7 +419,13 @@ make smoke
 # 5. Run the Milestone 4 demo (API lifecycle: run -> compare -> reproduce)
 .venv/bin/python scripts/demo_m4.py --n 6
 
-# 6. Run the quality gates
+# 6. Verify the complete workflow end to end (isolated temp DB)
+make e2e
+
+# 7. Measure the pipeline (writes docs/benchmarking.md)
+make benchmark
+
+# 8. Run the quality gates
 make lint
 make typecheck
 make test
@@ -361,6 +448,13 @@ make frontend-build      # emits frontend/dist
 
 The dashboard reads exclusively from the REST API. Create a scenario suite and
 a couple of experiments (via the UI or `curl`) to populate the views.
+
+### One-command development
+
+```bash
+scripts/dev.sh          # or: make dev
+# starts the backend on :8000 and the dashboard on :5173, applying migrations
+```
 
 ### Running the API
 
@@ -412,7 +506,7 @@ simeval/
     policies/           Policy interface, registry, two controllers
     scenarios/          Versioned, seeded scenario generation
     runners/            Episode execution
-    metrics/            Metric computation
+    metrics/            Metric computation + statistics + comparison
     graders/            Automated outcome classification
     artifacts/          Episode artifact storage
     adapters/           Simulator adapter contract
@@ -428,11 +522,13 @@ simeval/
     package.json        React + Vite + Tailwind
   configs/              Example configurations and scenario suites
   datasets/             Dataset manifests (binaries git-ignored)
-  scripts/              Developer scripts (smoke_sim.py, demo_m2/m3/m4.py, run_api.sh)
-  docs/                 Technical documentation
-  Dockerfile            Headless container image
-  docker-compose.yml    Local container orchestration
-  .github/workflows/    CI
+  scripts/              smoke_sim.py, smoke_e2e.py, benchmark.py, demo_m2/m3/m4.py,
+                        run_api.sh, dev.sh
+  docs/                 architecture, evaluation-methodology, data-model,
+                        benchmarking, limitations, research-log, troubleshooting
+  Dockerfile            Multi-stage image (frontend + backend, one origin)
+  docker-compose.yml    Single-service stack + optional PostgreSQL profile
+  .github/workflows/    CI (backend + frontend)
 ```
 
 Simulation logic is intentionally kept independent of HTTP endpoints and UI
@@ -448,12 +544,11 @@ components so it can be tested and reused without the backend or frontend.
 | M4 | Experiment API, worker lifecycle, DB persistence, reproducibility | **Complete** |
 | M5 | Statistical comparison and regression detection | Not started |
 | M6 | React dashboard (overview, new evaluation, details, compare, inspector) | **Complete** |
-| M7 | Docker, docs, end-to-end verification | Not started |
+| M7 | Docker, docs, end-to-end verification | **Complete** |
 | M8 | Optional vision / learned-policy extension | Not started |
 
 ## Known limitations
 
-- Episodes run, are graded, and produce persisted artifacts and aggregate
 - The dashboard is complete for the evaluation workflow, but the **episode
   inspector does not yet plot per-step trajectories**: the artifact endpoint
   returns array shapes only, so no time-series or replay is shown. This is
@@ -482,6 +577,38 @@ components so it can be tested and reused without the backend or frontend.
   either controller.
 - Throughput and latency are single-process CPU measurements and are not
   performance guarantees.
+
+## Reproducing the demo
+
+Everything above is reproducible from a clean checkout:
+
+```bash
+git clone <repo> && cd simeval
+make venv && make install && make dev-deps
+make migrate
+make e2e                       # complete workflow, isolated temp DB, exit 0 on success
+make benchmark                 # regenerate docs/benchmarking.md on your hardware
+make smoke                     # headless simulator capability probe
+docker compose up --build      # single-container UI + API on http://localhost:8000
+```
+
+Determinism is verified by the test suite: a fixed scenario + policy +
+configuration reproduces the same episode, and covered scenarios reproduce
+across process restarts. Cross-platform (CPU/OS/MuJoCo-version) determinism is
+**not** guaranteed.
+
+## Future directions
+
+- Expose per-step artifact **contents** so the episode inspector can plot real
+  trajectories, action traces, and contact events (no invented data).
+- Broaden the task suite (contact-rich manipulation, grasping) and add a
+  MuJoCo-Menagerie / ManiSkill adapter behind the existing simulator boundary.
+- Grow held-out suites and add sequential/group-sequential stopping rules so
+  comparisons reach an evidence verdict with fewer episodes.
+- Add a learned or vision-based policy with a documented, reproducible training
+  and evaluation pipeline (Milestone 8), and evaluate it against the classical
+  baselines on identical scenarios.
+- Optional object-storage artifact backend and PostgreSQL in CI.
 
 ## License
 

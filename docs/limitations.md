@@ -4,7 +4,7 @@ This document is deliberately conservative. SimEval is a research/portfolio
 system, not a production deployment, and it does not claim capabilities it has
 not implemented or measured.
 
-Status: reflects **Milestones 1–4**.
+Status: reflects **Milestones 1–7**.
 
 ## Simulation
 

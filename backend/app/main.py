@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -98,7 +98,44 @@ def create_app() -> FastAPI:
 
     app.include_router(routes_registry.router, prefix=settings.api_v1_prefix)
     app.include_router(routes_experiments.router, prefix=settings.api_v1_prefix)
+
+    _mount_dashboard(app)
     return app
+
+
+def _mount_dashboard(app: FastAPI) -> None:
+    """Serve the built dashboard if present (production single-container mode).
+
+    In development the Vite dev server serves the UI and proxies /api here, so
+    ``frontend/dist`` does not exist and this is a no-op. When the UI has been
+    built (e.g. in the Docker image), serve it from the same origin with an SPA
+    fallback, while leaving ``/api`` and ``/docs`` to FastAPI.
+    """
+    from pathlib import Path
+
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+    if not dist.is_dir():
+        return
+
+    app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+    index_file = dist / "index.html"
+
+    @app.get("/", include_in_schema=False)
+    async def _index() -> FileResponse:
+        return FileResponse(index_file)
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _spa_fallback(full_path: str) -> FileResponse:
+        # Unknown non-API paths fall back to the SPA router. Reserved prefixes
+        # are excluded so /api, /docs, /redoc, /openapi.json are never shadowed.
+        reserved = ("api/", "docs", "redoc", "openapi.json")
+        if full_path.startswith(reserved):
+            raise HTTPException(status_code=404, detail="not found")
+        return FileResponse(index_file)
 
 
 app = create_app()

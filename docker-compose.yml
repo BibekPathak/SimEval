@@ -1,5 +1,5 @@
 services:
-  api:
+  simeval:
     build: .
     ports:
       - "8000:8000"
@@ -10,10 +10,35 @@ services:
     volumes:
       - simeval-data:/data
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')",
+        ]
       interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # Optional PostgreSQL backend. Enable with:
+  #   docker compose --profile postgres up --build
+  # and set SIMEVAL_DATABASE_URL=postgresql+psycopg://simeval:simeval@db:5432/simeval
+  db:
+    image: postgres:16-alpine
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: simeval
+      POSTGRES_PASSWORD: simeval
+      POSTGRES_DB: simeval
+    volumes:
+      - simeval-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simeval"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
   simeval-data:
+  simeval-pg:

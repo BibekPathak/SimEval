@@ -10,6 +10,9 @@ help:
 	@echo "  make typecheck   Run mypy on core interfaces"
 	@echo "  make test        Run pytest"
 	@echo "  make smoke       Run the headless MuJoCo smoke test"
+	@echo "  make e2e         Run the end-to-end API workflow smoke test"
+	@echo "  make benchmark   Measure the pipeline and write docs/benchmarking.md"
+	@echo "  make dev         Start backend + dashboard together"
 	@echo "  make api         Run the FastAPI backend (reload)"
 	@echo "  make frontend-install  Install frontend dependencies"
 	@echo "  make frontend-dev      Run the Vite dev server"
@@ -46,6 +49,15 @@ test:
 
 smoke:
 	$(PY) scripts/smoke_sim.py
+
+e2e:
+	$(PY) scripts/smoke_e2e.py --n 8
+
+benchmark:
+	$(PY) scripts/benchmark.py --n 40 --write docs/benchmarking.md
+
+dev:
+	scripts/dev.sh
 
 api:
 	$(PY) -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload

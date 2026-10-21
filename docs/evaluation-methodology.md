@@ -5,9 +5,10 @@ metrics. It is the authoritative reference for what each number means. Any
 change to these definitions is a change to the evaluation protocol and should be
 recorded in `docs/research-log.md`.
 
-Status: reflects **Milestones 1–3**. Statistical inference (confidence
-intervals, paired comparisons, regression thresholds) is defined in Milestone 5
-and is **not yet implemented**; this document marks those gaps explicitly.
+Status: reflects **Milestones 1–7**. Statistical inference (Wilson intervals,
+paired bootstrap, regression thresholds) is implemented in Milestone 5 and
+exposed through `GET /api/v1/experiments/compare` and the dashboard's Compare
+page; the statistics section below documents the exact procedures.
 
 ## 1. Unit of evaluation
 
@@ -109,13 +110,32 @@ arbitrary scenes.
 
 ## 6. What is not yet claimed
 
-* No confidence intervals are reported (Milestone 5).
-* No paired scenario-level comparison or regression thresholds (Milestone 5).
-* No claim of statistical significance anywhere.
+* Statistical inference is implemented, but no **significance** is claimed beyond
+  the defined procedures; verdicts are `IMPROVED`/`REGRESSED`/`INCONCLUSIVE` at
+  the stated thresholds and confidence level.
+* No multi-comparison correction across many metrics (each metric is reported
+  independently; treat a battery of metrics accordingly).
+* No sequential/early-stopping analysis yet; the fixed sample size is the
+  scenario suite.
 * No GPU acceleration; all timings are single-process CPU measurements.
 * No learned policy; both policies are deterministic classical controllers.
+* No sim-to-real validation and no benchmark-leaderboard claims.
 
-## 7. Data provenance
+## 7. Statistical procedures (implemented)
+
+* **Per-arm success rate:** Wilson score interval at the configured confidence
+  (default 95%). Reported alongside the numerator/denominator.
+* **Success-rate difference (paired):** paired bootstrap over per-scenario
+  outcomes (b − a), percentile interval, deterministic seed.
+* **Continuous metrics (paired):** paired bootstrap over scenario differences,
+  resampling **scenarios**, never timesteps.
+* **Verdicts:** direction-aware; `IMPROVED`/`REGRESSED` require the interval to
+  exclude zero *and* the effect to clear the per-metric threshold; otherwise
+  `INCONCLUSIVE`. Below `min_pairs` (default 10) the report is explicitly
+  insufficient evidence.
+* **Infrastructure failures** are excluded from paired comparisons.
+
+## 8. Data provenance
 
 Every metric is derived from persisted episode artifacts and results. Fixture
 data used in unit tests is clearly separated from real simulation runs:
