@@ -3,6 +3,7 @@
 
 import type {
   CompareOut,
+  ArtifactSeriesOut,
   EpisodeArtifactsOut,
   EpisodeOut,
   ExperimentCreateIn,
@@ -102,4 +103,8 @@ export const api = {
   episode: (id: string) => request<EpisodeOut>(`/episodes/${id}`),
   episodeArtifacts: (id: string) =>
     request<EpisodeArtifactsOut>(`/episodes/${id}/artifacts`),
+  episodeSeries: (id: string, arrays: string[], maxSteps = 600) =>
+    request<ArtifactSeriesOut>(
+      `/episodes/${id}/artifacts/series${qs({ arrays: arrays.join(","), max_steps: maxSteps })}`,
+    ),
 };

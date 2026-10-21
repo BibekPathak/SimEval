@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import math
+
+import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_session
 from backend.app.models.entities import Experiment
 from backend.app.schemas.experiment import (
+    ArtifactSeriesOut,
     CompareOut,
     EpisodeArtifactsOut,
     EpisodeOut,
@@ -19,6 +23,10 @@ from backend.app.schemas.experiment import (
 from backend.app.services import experiment_service as svc
 from backend.app.services.state_machine import ExperimentStatus, is_terminal
 from backend.app.workers.experiment_worker import get_worker
+
+#: Array names TraceRecorder may write and a client may request. Shared with the
+#: simulation layer so the two cannot silently diverge.
+from simulation.runners.trace import RECORDED_ARRAY_NAMES
 
 router = APIRouter()
 
@@ -283,4 +291,81 @@ def get_episode_artifacts(
         arrays = {k: list(v.shape) for k, v in loaded.items()}
     return EpisodeArtifactsOut(
         episode_id=episode_id, artifact_ref=row.artifact_ref, exists=exists, arrays=arrays
+    )
+
+
+#: Names a client may request. Prevents arbitrary cache probing and keeps the
+#: payload bounded. Mirrors the arrays written by TraceRecorder.
+_ALLOWED_SERIES = RECORDED_ARRAY_NAMES
+
+
+@router.get(
+    "/episodes/{episode_id}/artifacts/series",
+    response_model=ArtifactSeriesOut,
+    tags=["episodes"],
+)
+def get_episode_artifact_series(
+    episode_id: str,
+    arrays: str = Query(
+        default="",
+        description=(
+            "Comma-separated array names to return. Empty means the default set "
+            f"({', '.join(sorted(_ALLOWED_SERIES))})."
+        ),
+    ),
+    max_steps: int = Query(
+        default=600, ge=1, le=5000, description="Cap on returned points per array"
+    ),
+    session: Session = Depends(get_session),
+) -> ArtifactSeriesOut:
+    from backend.app.core.config import get_settings
+    from backend.app.models.entities import Episode
+    from simulation.artifacts.store import LocalArtifactStore
+
+    row = session.query(Episode).filter(Episode.episode_id == episode_id).one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="episode not found")
+    if not row.artifact_ref:
+        raise HTTPException(status_code=404, detail="episode has no artifacts")
+
+    store = LocalArtifactStore(get_settings().artifact_root)
+    if not store.exists(row.artifact_ref):
+        raise HTTPException(status_code=404, detail="artifact file is missing")
+
+    requested = [a.strip() for a in arrays.split(",") if a.strip()] or sorted(
+        {"source_step", "ee_target_dist", "qpos", "action", "collision", "reward"}
+    )
+    unknown = [a for a in requested if a not in _ALLOWED_SERIES]
+    if unknown:
+        raise HTTPException(
+            status_code=422,
+            detail=f"unknown array(s) {unknown}; allowed: {sorted(_ALLOWED_SERIES)}",
+        )
+
+    loaded = store.get_arrays(row.artifact_ref)
+    available = [a for a in requested if a in loaded]
+    if not available:
+        raise HTTPException(status_code=404, detail="requested arrays not present in artifact")
+
+    n_steps = int(next(iter(loaded.values())).shape[0])
+    stride = max(1, math.ceil(n_steps / max_steps))
+    series: dict[str, list[float] | list[list[float]]] = {}
+    returned = 0
+    for name in available:
+        arr = np.asarray(loaded[name], dtype=float)[::stride]
+        returned = int(arr.shape[0])
+        if arr.ndim == 1:
+            series[name] = [float(x) for x in arr]
+        elif arr.ndim == 2:
+            series[name] = [[float(x) for x in row_values] for row_values in arr]
+        # Higher-dimensional arrays are not exposed.
+
+    return ArtifactSeriesOut(
+        episode_id=episode_id,
+        artifact_ref=row.artifact_ref,
+        exists=True,
+        n_steps=n_steps,
+        stride=stride,
+        returned_steps=returned,
+        series=series,
     )

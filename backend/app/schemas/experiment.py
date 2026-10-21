@@ -101,6 +101,24 @@ class EpisodeArtifactsOut(BaseModel):
     arrays: dict[str, list[int]]
 
 
+class ArtifactSeriesOut(BaseModel):
+    """Per-step arrays for one episode, downsampled for transport.
+
+    ``series`` maps an allowed array name to its values. 1-D arrays are returned
+    as ``list[float]``; 2-D arrays (e.g. ``qpos`` with shape (T, nq)) are
+    returned as ``list[list[float]]``. ``stride`` states the decimation applied
+    (1 means every recorded step is present).
+    """
+
+    episode_id: str
+    artifact_ref: str
+    exists: bool
+    n_steps: int
+    stride: int
+    returned_steps: int
+    series: dict[str, list[float] | list[list[float]]]
+
+
 class ComparisonMetric(BaseModel):
     metric: str
     unit: str = ""

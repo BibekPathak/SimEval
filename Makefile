@@ -15,6 +15,7 @@ help:
 	@echo "  make dev         Start backend + dashboard together"
 	@echo "  make train-bc    Train the behavior-cloning policy (DAgger)"
 	@echo "  make eval-bc     Evaluate the learned policy on held-out scenarios"
+	@echo "  make compare-study  Multi-scenario policy comparison with CIs"
 	@echo "  make api         Run the FastAPI backend (reload)"
 	@echo "  make frontend-install  Install frontend dependencies"
 	@echo "  make frontend-dev      Run the Vite dev server"
@@ -84,6 +85,9 @@ train-bc:
 
 eval-bc:
 	$(PY) scripts/eval_bc.py --n 120
+
+compare-study:
+	$(PY) scripts/compare_study.py --n 120
 
 # --- frontend -----------------------------------------------------------------
 frontend-install:

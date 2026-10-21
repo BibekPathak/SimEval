@@ -127,6 +127,7 @@ GET  /api/v1/experiments/{id}/episodes
 GET  /api/v1/experiments/{id}/metrics
 GET  /api/v1/episodes/{id}
 GET  /api/v1/episodes/{id}/artifacts
+GET  /api/v1/episodes/{id}/artifacts/series?arrays=&max_steps=
 ```
 
 ### Milestone 6 — React dashboard
@@ -149,10 +150,12 @@ GET  /api/v1/episodes/{id}/artifacts
     per-arm Wilson intervals, an evidence verdict, and compatibility warnings**
     (the M5 statistics surfaced in the UI).
   - **Episode inspection** — outcome, the grader's deciding rule and explanation,
-    recorded scalars, and the persisted artifact array shapes.
-- Honest data handling: the episode inspector shows recorded evidence and
-  artifact **shapes**; it does not display reconstructed or invented
-  trajectories. Per-step array plotting awaits an array-content endpoint.
+    recorded scalars, and **real per-step time-series plots** (end-effector-to-
+    target distance with the success threshold, joint positions, commanded
+    actions, and contact steps) served from the artifact series endpoint.
+- Honest data handling: every plotted series comes from the persisted recorded
+  arrays; nothing is reconstructed or invented. Arrays that are absent are
+  omitted rather than faked.
 - `npm run lint`, `npm run typecheck`, and `npm run build` all pass; CI runs them.
 
 ### Milestone 7 — packaging, docs, and end-to-end verification
@@ -449,7 +452,10 @@ make benchmark
 make train-bc            # DAgger training -> dataset + checkpoint
 make eval-bc             # held-out evaluation + ablation vs the expert
 
-# 9. Run the quality gates
+# 9. Run a reproducible multi-scenario comparison study
+make compare-study       # large held-out suite; prints CIs and verdicts
+
+# 10. Run the quality gates
 make lint
 make typecheck
 make test
@@ -549,8 +555,8 @@ simeval/
   configs/              Example configurations and scenario suites
   datasets/             Demonstration datasets + manifests (git-ignored)
   checkpoints/          Learned-policy checkpoints (git-ignored, regenerable)
-  scripts/              smoke_sim.py, smoke_e2e.py, benchmark.py, train_bc.py,
-                        eval_bc.py, demo_m2/m3/m4.py, run_api.sh, dev.sh
+  scripts/              smoke_sim.py, smoke_e2e.py, benchmark.py, compare_study.py,
+                        train_bc.py, eval_bc.py, demo_m2/m3/m4.py, run_api.sh, dev.sh
   docs/                 architecture, evaluation-methodology, data-model,
                         benchmarking, learned-policy, limitations, research-log,
                         troubleshooting
@@ -577,13 +583,13 @@ components so it can be tested and reused without the backend or frontend.
 
 ## Known limitations
 
-- The dashboard is complete for the evaluation workflow, but the **episode
-  inspector does not yet plot per-step trajectories**: the artifact endpoint
-  returns array shapes only, so no time-series or replay is shown. This is
-  deliberate — the UI does not invent trajectory data. An array-content endpoint
-  and plotting are a follow-up.
-- The comparison view surfaces confidence intervals and verdicts (M5), but with
-  small suites the verdict will read **INCONCLUSIVE**; interpret accordingly.
+- The episode inspector plots real recorded time-series (end-effector-to-target
+  distance, joint positions, commanded actions, contact steps) served from
+  `GET /api/v1/episodes/{id}/artifacts/series`. There is **no 3D replay/viewer**,
+  and no image or video frames are captured.
+- The comparison view surfaces confidence intervals and verdicts (M5). With small
+  suites the verdict reads **INCONCLUSIVE**; use a large held-out suite (e.g.
+  `scripts/compare_study.py --n 120`) for a definitive verdict.
 - The worker is a **single-process, single-threaded bounded local executor**. It
   is correct and restart-safe, but not horizontally scalable.
 - SQLite is used by default; PostgreSQL compatibility is intended but not yet

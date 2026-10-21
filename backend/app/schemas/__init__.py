@@ -12,6 +12,7 @@ from backend.app.schemas.common import (
     TaskOut,
 )
 from backend.app.schemas.experiment import (
+    ArtifactSeriesOut,
     CompareOut,
     ComparisonMetric,
     EpisodeArtifactsOut,
@@ -23,6 +24,7 @@ from backend.app.schemas.experiment import (
 )
 
 __all__ = [
+    "ArtifactSeriesOut",
     "CompareOut",
     "ComparisonMetric",
     "EpisodeArtifactsOut",

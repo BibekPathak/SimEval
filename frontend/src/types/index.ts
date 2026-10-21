@@ -135,6 +135,16 @@ export interface EpisodeArtifactsOut {
   arrays: Record<string, number[]>;
 }
 
+export interface ArtifactSeriesOut {
+  episode_id: string;
+  artifact_ref: string;
+  exists: boolean;
+  n_steps: number;
+  stride: number;
+  returned_steps: number;
+  series: Record<string, number[] | number[][]>;
+}
+
 export interface MetricSet {
   n_episodes_total: number;
   n_episodes_evaluated: number;

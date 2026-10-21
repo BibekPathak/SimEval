@@ -180,6 +180,52 @@ def test_episode_artifacts_endpoint(client) -> None:
 def test_unknown_episode_404(client) -> None:
     assert client.get("/api/v1/episodes/nope").status_code == 404
     assert client.get("/api/v1/episodes/nope/artifacts").status_code == 404
+    assert client.get("/api/v1/episodes/nope/artifacts/series").status_code == 404
+
+
+def test_episode_artifact_series(client) -> None:
+    _make_suite(client, "sseries", 3)
+    created = _make_experiment(client, "sseries", capture_every=1)
+    eid = created["experiment_id"]
+    client.post(f"/api/v1/experiments/{eid}/start")
+    _wait(client, eid)
+    ep_id = client.get(f"/api/v1/experiments/{eid}/episodes").json()[0]["episode_id"]
+
+    resp = client.get(f"/api/v1/episodes/{ep_id}/artifacts/series")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["exists"] is True
+    assert body["n_steps"] > 0
+    # Real recorded series, not shapes.
+    assert "ee_target_dist" in body["series"]
+    assert len(body["series"]["ee_target_dist"]) == body["returned_steps"]
+    assert isinstance(body["series"]["qpos"][0], list)  # 2-D array -> list of rows
+    # ee_target_dist is recorded with shape (T, 1), so it is nested lists.
+    first = body["series"]["ee_target_dist"][0]
+    assert isinstance(first, list) and isinstance(first[0], (int, float))
+
+
+def test_episode_artifact_series_rejects_unknown_array(client) -> None:
+    _make_suite(client, "sseries2", 2)
+    created = _make_experiment(client, "sseries2")
+    eid = created["experiment_id"]
+    client.post(f"/api/v1/experiments/{eid}/start")
+    _wait(client, eid)
+    ep_id = client.get(f"/api/v1/experiments/{eid}/episodes").json()[0]["episode_id"]
+    resp = client.get(f"/api/v1/episodes/{ep_id}/artifacts/series", params={"arrays": "bogus"})
+    assert resp.status_code == 422
+
+
+def test_episode_artifact_series_downsampling(client) -> None:
+    _make_suite(client, "sseries3", 2)
+    created = _make_experiment(client, "sseries3", capture_every=1)
+    eid = created["experiment_id"]
+    client.post(f"/api/v1/experiments/{eid}/start")
+    _wait(client, eid)
+    ep_id = client.get(f"/api/v1/experiments/{eid}/episodes").json()[0]["episode_id"]
+    body = client.get(f"/api/v1/episodes/{ep_id}/artifacts/series", params={"max_steps": 5}).json()
+    assert body["returned_steps"] <= 5
+    assert body["stride"] >= 1
 
 
 def test_metrics_endpoint_matches_experiment(client) -> None:

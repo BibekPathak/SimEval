@@ -141,3 +141,23 @@ Every metric is derived from persisted episode artifacts and results. Fixture
 data used in unit tests is clearly separated from real simulation runs:
 grader and metric tests construct synthetic `EpisodeResult`s directly and never
 masquerade as simulator output, while runner tests execute real MuJoCo rollouts.
+
+Recorded arrays can be retrieved for inspection as real values through
+`GET /api/v1/episodes/{id}/artifacts/series` (whitelisted names, `max_steps`
+downsampling). The dashboard's episode inspector plots these values directly;
+nothing is interpolated or reconstructed.
+
+## 9. Worked example (reproducible)
+
+`scripts/compare_study.py` compares two policies across a large held-out suite.
+Recorded findings (committed code, real rollouts):
+
+* At **80 scenarios**: `ik_planner_baseline` vs `resolved_rate_candidate` →
+  success rate **REGRESSED** (delta −0.05, 95% CI [−0.100, −0.013]) and
+  episode length **REGRESSED** (delta +164 steps, CI well above zero).
+* At **30 held-out scenarios**: episode length and completion time are
+  **REGRESSED**, while success rate is **INCONCLUSIVE** (delta 0.000).
+
+These results describe the two controllers on these scenarios only. They are not
+a claim that either controller is better in general, and they are not benchmark
+scores.

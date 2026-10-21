@@ -25,6 +25,23 @@ from typing import Any
 
 import numpy as np
 
+#: Canonical set of array names a full trace (with actions) may contain. The API
+#: validates client-requested array names against this set so the two layers
+#: cannot silently diverge.
+RECORDED_ARRAY_NAMES: frozenset[str] = frozenset(
+    {
+        "source_step",
+        "qpos",
+        "qvel",
+        "ee_pos",
+        "target_pos",
+        "ee_target_dist",
+        "action",
+        "reward",
+        "collision",
+    }
+)
+
 
 @dataclass
 class TraceRecorder:
@@ -92,4 +109,4 @@ class TraceRecorder:
         }
 
 
-__all__ = ["TraceRecorder"]
+__all__ = ["RECORDED_ARRAY_NAMES", "TraceRecorder"]
