@@ -4,7 +4,7 @@ This document is deliberately conservative. SimEval is a research/portfolio
 system, not a production deployment, and it does not claim capabilities it has
 not implemented or measured.
 
-Status: reflects **Milestones 1–7**.
+Status: reflects **Milestones 1–8**.
 
 ## Simulation
 
@@ -19,11 +19,14 @@ Status: reflects **Milestones 1–7**.
 
 ## Policies
 
-- Both policies are **deterministic classical controllers** (a full-IK setpoint
-  planner and an incremental resolved-rate controller). There is **no learned
-  policy**, and no vision/language input. The baseline/candidate comparison is a
-  controller comparison, not a model-architecture comparison.
-- No imitation-learning or RL training pipeline (Milestone 8, optional).
+- Two policies are **deterministic classical controllers** (a full-IK setpoint
+  planner and an incremental resolved-rate controller). The baseline/candidate
+  comparison is a controller comparison, not a model-architecture comparison.
+- A third policy, `behavior_cloning`, is **learned** via DAgger imitation of the
+  baseline expert. It consumes **low-dimensional state only** (no images, no
+  language) and is evaluated on held-out scenarios; it is slower than the expert
+  and slightly less successful. It is not a vision-based or VLA policy.
+- No reinforcement-learning pipeline. No sim-to-real validation.
 
 ## Evaluation & statistics
 

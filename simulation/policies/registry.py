@@ -11,6 +11,7 @@ from collections.abc import Callable
 from typing import Any
 
 from simulation.policies.base import Policy, PolicyConfig
+from simulation.policies.behavior_cloning import BehaviorCloningConfig, BehaviorCloningPolicy
 from simulation.policies.context import KinematicsContext
 from simulation.policies.ik_planner import IKPlannerConfig, IKPlannerPolicy
 from simulation.policies.resolved_rate import ResolvedRateConfig, ResolvedRatePolicy
@@ -30,12 +31,23 @@ def _make_resolved_rate(config: PolicyConfig, ctx: KinematicsContext) -> Policy:
     return ResolvedRatePolicy(config, ctx)
 
 
+def _make_behavior_cloning(config: PolicyConfig, ctx: KinematicsContext) -> Policy:
+    if not isinstance(config, BehaviorCloningConfig):
+        config = BehaviorCloningConfig(**{**config.to_dict()})
+    return BehaviorCloningPolicy(config, ctx)
+
+
 _REGISTRY: dict[str, tuple[type[PolicyConfig], PolicyFactory, str]] = {
     "ik_planner_baseline": (IKPlannerConfig, _make_ik_planner, "Baseline full-IK setpoint planner"),
     "resolved_rate_candidate": (
         ResolvedRateConfig,
         _make_resolved_rate,
         "Candidate incremental resolved-rate controller",
+    ),
+    "behavior_cloning": (
+        BehaviorCloningConfig,
+        _make_behavior_cloning,
+        "Learned behavior-cloning policy (imitation of the baseline expert)",
     ),
 }
 

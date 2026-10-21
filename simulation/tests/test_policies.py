@@ -25,11 +25,12 @@ def env() -> Iterator[ReachEnv]:
     e.close()
 
 
-def test_registry_lists_two_distinct_policies() -> None:
+def test_registry_lists_distinct_policies() -> None:
     listed = available_policies()
     names = {p["name"] for p in listed}
-    assert names == {"ik_planner_baseline", "resolved_rate_candidate"}
-    assert len(listed) == 2
+    # Two classical controllers plus the Milestone 8 learned policy.
+    assert {"ik_planner_baseline", "resolved_rate_candidate", "behavior_cloning"} == names
+    assert len(listed) == 3
 
 
 def test_policies_are_constructible_from_config(env: ReachEnv) -> None:

@@ -10,7 +10,7 @@ SimEval separates three kinds of data:
 3. **Artifacts** — larger per-step arrays written to an artifact store, never as
    database rows.
 
-Status: reflects **Milestones 1–7**. The database schema and SQLAlchemy models
+Status: reflects **Milestones 1–8**. The database schema and SQLAlchemy models
 are introduced in Milestone 4; this document defines the logical shapes they
 must implement.
 

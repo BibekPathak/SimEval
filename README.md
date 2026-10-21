@@ -173,6 +173,26 @@ GET  /api/v1/episodes/{id}/artifacts
 - **CI** runs backend lint/format/type-check/tests, a migration up/down check,
   the headless smoke test, and the frontend lint/type-check/build.
 
+### Milestone 8 — learned policy (behavior cloning with DAgger)
+
+- `simulation/learning/` — a self-contained NumPy MLP (forward pass,
+  backpropagation, Adam, train/validation split, early stopping). No
+  multi-gigabyte framework is required, which is a deliberate, documented
+  tradeoff given the machine's disk budget.
+- `simulation/datasets/` — demonstration dataset generation with a versioned
+  manifest and SHA-256 checksum. Demonstrations come from real MuJoCo rollouts of
+  the project's own expert; **no third-party data**.
+- `simulation/policies/behavior_cloning.py` — a learned `Policy` that loads a
+  checkpoint and maps low-dimensional state to joint setpoints. Registered as
+  `behavior_cloning` and runnable through the API/worker like any other policy.
+- `simulation/learning/dagger.py` — DAgger: iteratively roll a β-mixture of expert
+  and learner, label visited states with the expert, aggregate, and retrain.
+- `scripts/train_bc.py` (`make train-bc`) and `scripts/eval_bc.py` (`make eval-bc`
+  ) — training and held-out evaluation with an ablation.
+- **Result:** plain behavior cloning fails here (0/16 held-out) due to
+  compounding error; **DAgger recovers it to 26/31 (83.9%)** versus the expert's
+  28/31 (90.3%). Full analysis in `docs/learned-policy.md`.
+
 ### Verified smoke-test output
 
 ```
@@ -425,7 +445,11 @@ make e2e
 # 7. Measure the pipeline (writes docs/benchmarking.md)
 make benchmark
 
-# 8. Run the quality gates
+# 8. Train and evaluate the learned policy (Milestone 8)
+make train-bc            # DAgger training -> dataset + checkpoint
+make eval-bc             # held-out evaluation + ablation vs the expert
+
+# 9. Run the quality gates
 make lint
 make typecheck
 make test
@@ -503,12 +527,14 @@ simeval/
     tests/              Backend tests (API, state machine, worker)
   simulation/
     environments/       MJCF models, reach task, env, kinematics
-    policies/           Policy interface, registry, two controllers
+    policies/           Policy interface, registry, controllers + learned policy
     scenarios/          Versioned, seeded scenario generation
     runners/            Episode execution
     metrics/            Metric computation + statistics + comparison
     graders/            Automated outcome classification
     artifacts/          Episode artifact storage
+    datasets/           Demonstration dataset generation + manifests
+    learning/           NumPy MLP training + DAgger
     adapters/           Simulator adapter contract
     tests/              Simulation tests
   frontend/
@@ -521,11 +547,13 @@ simeval/
       types/            API contract types
     package.json        React + Vite + Tailwind
   configs/              Example configurations and scenario suites
-  datasets/             Dataset manifests (binaries git-ignored)
-  scripts/              smoke_sim.py, smoke_e2e.py, benchmark.py, demo_m2/m3/m4.py,
-                        run_api.sh, dev.sh
+  datasets/             Demonstration datasets + manifests (git-ignored)
+  checkpoints/          Learned-policy checkpoints (git-ignored, regenerable)
+  scripts/              smoke_sim.py, smoke_e2e.py, benchmark.py, train_bc.py,
+                        eval_bc.py, demo_m2/m3/m4.py, run_api.sh, dev.sh
   docs/                 architecture, evaluation-methodology, data-model,
-                        benchmarking, limitations, research-log, troubleshooting
+                        benchmarking, learned-policy, limitations, research-log,
+                        troubleshooting
   Dockerfile            Multi-stage image (frontend + backend, one origin)
   docker-compose.yml    Single-service stack + optional PostgreSQL profile
   .github/workflows/    CI (backend + frontend)
@@ -545,7 +573,7 @@ components so it can be tested and reused without the backend or frontend.
 | M5 | Statistical comparison and regression detection | Not started |
 | M6 | React dashboard (overview, new evaluation, details, compare, inspector) | **Complete** |
 | M7 | Docker, docs, end-to-end verification | **Complete** |
-| M8 | Optional vision / learned-policy extension | Not started |
+| M8 | Optional vision / learned-policy extension | **Complete** (learned policy; no vision) |
 
 ## Known limitations
 
@@ -562,9 +590,13 @@ components so it can be tested and reused without the backend or frontend.
   exercised in CI.
 - The dashboard has **no authentication**; do not expose it to untrusted
   networks.
-- Both policies are deterministic classical controllers. There is **no learned
-  policy** yet; do not read the baseline/candidate comparison as a model-quality
-  claim.
+- The learned policy (`behavior_cloning`) is **imitation of a classical
+  controller from low-dimensional state** — it uses no images and makes no
+  perception-to-action or sim-to-real claim. It is slower than the expert it
+  imitates and its held-out success (83.9%) sits below the expert's (90.3%) on a
+  31-scenario sample.
+- The two classical controllers are deterministic; do not read the
+  baseline/candidate comparison as a model-quality claim.
 - Collision means EE-vs-floor contact, which is exact for this model because
   only the end effector and floor are collidable. It is not a general collision
   metric for arbitrary scenes.

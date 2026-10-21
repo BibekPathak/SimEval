@@ -5,7 +5,7 @@ metrics. It is the authoritative reference for what each number means. Any
 change to these definitions is a change to the evaluation protocol and should be
 recorded in `docs/research-log.md`.
 
-Status: reflects **Milestones 1–7**. Statistical inference (Wilson intervals,
+Status: reflects **Milestones 1–8**. Statistical inference (Wilson intervals,
 paired bootstrap, regression thresholds) is implemented in Milestone 5 and
 exposed through `GET /api/v1/experiments/compare` and the dashboard's Compare
 page; the statistics section below documents the exact procedures.

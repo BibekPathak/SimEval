@@ -13,6 +13,8 @@ help:
 	@echo "  make e2e         Run the end-to-end API workflow smoke test"
 	@echo "  make benchmark   Measure the pipeline and write docs/benchmarking.md"
 	@echo "  make dev         Start backend + dashboard together"
+	@echo "  make train-bc    Train the behavior-cloning policy (DAgger)"
+	@echo "  make eval-bc     Evaluate the learned policy on held-out scenarios"
 	@echo "  make api         Run the FastAPI backend (reload)"
 	@echo "  make frontend-install  Install frontend dependencies"
 	@echo "  make frontend-dev      Run the Vite dev server"
@@ -76,6 +78,12 @@ demo3:
 
 demo4:
 	$(PY) scripts/demo_m4.py --n 6
+
+train-bc:
+	$(PY) scripts/train_bc.py --mode dagger --iterations 6 --epochs 250
+
+eval-bc:
+	$(PY) scripts/eval_bc.py --n 120
 
 # --- frontend -----------------------------------------------------------------
 frontend-install:

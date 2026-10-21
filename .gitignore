@@ -27,6 +27,9 @@ artifacts/
 *.npz
 *.mp4
 
+# Learned-policy checkpoints are regenerable via scripts/train_bc.py
+checkpoints/
+
 # Node / frontend
 node_modules/
 frontend/dist/
